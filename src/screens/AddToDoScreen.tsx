@@ -1,10 +1,18 @@
 import React, { Component } from 'react';
-import { View, Text, TextInput, Button } from 'react-native';
+import { View, Text, TextInput, Button, Alert } from 'react-native';
 import uuid from 'react-native-uuid';
+import DefaultPreference from 'react-native-default-preference';
+
+interface ToDoItem {
+  id: string;
+  title: string;
+  description: string;
+}
 
 interface AddToDoScreenState {
   title: string;
   description: string;
+  toDoList: ToDoItem[];
 }
 
 class AddToDoScreen extends Component<{}, AddToDoScreenState> {
@@ -13,6 +21,7 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
     this.state = {
       title: '',
       description: '',
+      toDoList: [],
     };
   }
 
@@ -24,13 +33,24 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
     this.setState({ description: text });
   };
 
-  handleAddToDo = () => {
-    const newToDo = {
-      id: uuid.v4(),
-      title: this.state.title,
-      description: this.state.description,
+  handleAddToDo = async () => {
+    const { title, description, toDoList } = this.state;
+    const newToDo: ToDoItem = {
+      id: uuid.v4().toString(),  // Ensure the ID is cast to a string
+      title,
+      description,
     };
-    // Add logic to save the new To-Do item
+
+    const updatedToDoList = [...toDoList, newToDo];
+    this.setState({ toDoList: updatedToDoList, title: '', description: '' });
+
+    // Store the updated To-Do list using DefaultPreference
+    try {
+      await DefaultPreference.set('toDoList', JSON.stringify(updatedToDoList));
+      Alert.alert('Success', 'To-Do item added successfully');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to add To-Do item');
+    }
   };
 
   render() {
