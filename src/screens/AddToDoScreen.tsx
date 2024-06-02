@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { View, Text, TextInput, Button, Alert } from 'react-native';
 import uuid from 'react-native-uuid';
 import DefaultPreference from 'react-native-default-preference';
+import notifee, { TriggerType, TimestampTrigger } from '@notifee/react-native';
 
 interface ToDoItem {
   id: string;
@@ -36,7 +37,7 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
   handleAddToDo = async () => {
     const { title, description, toDoList } = this.state;
     const newToDo: ToDoItem = {
-      id: uuid.v4().toString(),  // Ensure the ID is cast to a string
+      id: uuid.v4().toString(),
       title,
       description,
     };
@@ -44,30 +45,49 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
     const updatedToDoList = [...toDoList, newToDo];
     this.setState({ toDoList: updatedToDoList, title: '', description: '' });
 
-    // Store the updated To-Do list using DefaultPreference
     try {
       await DefaultPreference.set('toDoList', JSON.stringify(updatedToDoList));
-      Alert.alert('Success', 'To-Do item added successfully');
+      await this.scheduleReminder(newToDo);
+      Alert.alert('Ωραια', 'ΤΟ εφτιαξες μαγκα μου');
     } catch (error) {
-      Alert.alert('Error', 'Failed to add To-Do item');
+      Alert.alert('Οχι και τοσο ωραια', 'Κατι πηγε λαθος');
     }
+  };
+
+  scheduleReminder = async (toDo: ToDoItem) => {
+    const trigger: TimestampTrigger = {
+      type: TriggerType.TIMESTAMP,
+      timestamp: Date.now() + 60 * 1000, // Schedule to show in 1 minute
+    };
+
+    await notifee.createTriggerNotification(
+      {
+        title: 'Υπενθημιση',
+        body: `Μην ξεχασεις το : ${toDo.title}`,
+        android: {
+          channelId: 'default',
+        //  smallIcon: 'name-of-a-small-icon',  an thelw allh eikona
+        },
+      },
+      trigger
+    );
   };
 
   render() {
     return (
       <View>
-        <Text>Add New To-Do</Text>
+        <Text>Προσθηκη νεο για να κανεις πραγμα</Text>
         <TextInput
-          placeholder="Title"
+          placeholder="Τιτλος"
           onChangeText={this.handleTitleChange}
           value={this.state.title}
         />
         <TextInput
-          placeholder="Description"
+          placeholder="Περιγραφη"
           onChangeText={this.handleDescriptionChange}
           value={this.state.description}
         />
-        <Button title="Add To-Do" onPress={this.handleAddToDo} />
+        <Button title="Προσθηκη" onPress={this.handleAddToDo} />
       </View>
     );
   }

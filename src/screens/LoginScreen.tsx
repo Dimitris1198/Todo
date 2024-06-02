@@ -27,13 +27,13 @@ class LoginScreen extends Component<any, LoginScreenState> {
     const { username, password } = this.state;
 
     try {
-      const response = await fetch('https://api.npoint.io/f74e690311e2654a5f8f'); // Replace with the actual endpoint
+      const response = await fetch('https://api.npoint.io/f74e690311e2654a5f8f'); 
       const credentials = await response.json();
         console.log(credentials['password'],"aaaaaaaaa");
       if (credentials['user_name'] === username && credentials['password'] === password) {
         this.props.navigation.navigate('MainTabs');
       } else {
-        Alert.alert('Login Failed', 'Invalid username or password');
+        Alert.alert('Εφαγες πορτα', 'Λαθος στοιχεια');
       }
     } catch (error) {
       Alert.alert('Login Failed', 'An error occurred. Please try again.');
@@ -45,12 +45,12 @@ class LoginScreen extends Component<any, LoginScreenState> {
       <View>
         <Text>Login</Text>
         <TextInput
-          placeholder="Username"
+          placeholder="Ονομα χρηστη"
           onChangeText={this.handleUsernameChange}
           value={this.state.username}
         />
         <TextInput
-          placeholder="Password"
+          placeholder="Κωδικουλης"
           secureTextEntry
           onChangeText={this.handlePasswordChange}
           value={this.state.password}

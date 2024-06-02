@@ -11,7 +11,7 @@ const Tab = createBottomTabNavigator();
 
 const MainTabs = () => {
   return (
-    <Tab.Navigator>
+    <Tab.Navigator initialRouteName="AddToDo">
       <Tab.Screen name="AddToDo" component={AddToDoScreen} />
       <Tab.Screen name="ToDoList" component={ToDoListScreen} />
     </Tab.Navigator>
@@ -23,7 +23,7 @@ const AppNavigator = () => {
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Login">
         <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="MainTabs" component={MainTabs} />
+        <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

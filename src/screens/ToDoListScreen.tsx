@@ -1,18 +1,22 @@
 import React, { Component } from 'react';
-import { View, Text, FlatList, Button, Alert, TextInput } from 'react-native';
+import { View, Text, FlatList, Button, Alert, TextInput, Platform, Switch } from 'react-native';
 import DefaultPreference from 'react-native-default-preference';
+import notifee, { EventType, TriggerType, TimestampTrigger } from '@notifee/react-native';
+import { PERMISSIONS, check, request } from 'react-native-permissions';
+import uuid from 'react-native-uuid';
 
 interface ToDoItem {
   id: string;
   title: string;
   description: string;
+  reminderEnabled: boolean;
 }
 
 interface ToDoListScreenState {
   toDoList: ToDoItem[];
+  newTitle: string;
+  newDescription: string;
   editingItemId: string | null;
-  editingTitle: string;
-  editingDescription: string;
 }
 
 class ToDoListScreen extends Component<{}, ToDoListScreenState> {
@@ -20,14 +24,40 @@ class ToDoListScreen extends Component<{}, ToDoListScreenState> {
     super(props);
     this.state = {
       toDoList: [],
+      newTitle: '',
+      newDescription: '',
       editingItemId: null,
-      editingTitle: '',
-      editingDescription: '',
     };
   }
 
-  componentDidMount() {
+  async componentDidMount() {
     this.loadToDoList();
+    this.setupNotificationChannel();
+    this.props.navigation.addListener('focus', this.loadToDoList);
+  }
+
+  componentWillUnmount() {
+    this.props.navigation.removeListener('focus', this.loadToDoList);
+  }
+
+  async setupNotificationChannel() {
+    // Create a channel (required for Android)
+    await notifee.createChannel({
+      id: 'default',
+      name: 'Default Channel',
+    });
+
+    // Setup notification event handler
+    notifee.onForegroundEvent(({ type, detail }) => {
+      switch (type) {
+        case EventType.DISMISSED:
+          console.log('Notification dismissed', detail.notification);
+          break;
+        case EventType.PRESS:
+          console.log('Notification pressed', detail.notification);
+          break;
+      }
+    });
   }
 
   loadToDoList = async () => {
@@ -37,86 +67,103 @@ class ToDoListScreen extends Component<{}, ToDoListScreenState> {
         this.setState({ toDoList: JSON.parse(storedToDoList) });
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to load To-Do list');
+      Alert.alert('Σγαλμα', 'Η λιστα δεν μπορεσε να φορτωσει');
+    }
+  };
+
+  handleEdit = (id: string) => {
+    const { toDoList } = this.state;
+    const itemToEdit = toDoList.find(item => item.id === id);
+    if (itemToEdit) {
+      this.setState({
+        newTitle: itemToEdit.title,
+        newDescription: itemToEdit.description,
+        editingItemId: id,
+      });
     }
   };
 
   handleDelete = async (id: string) => {
-    const updatedToDoList = this.state.toDoList.filter((item) => item.id !== id);
+    const { toDoList } = this.state;
+    const updatedToDoList = toDoList.filter(item => item.id !== id);
     this.setState({ toDoList: updatedToDoList });
 
     try {
       await DefaultPreference.set('toDoList', JSON.stringify(updatedToDoList));
-      Alert.alert('Success', 'To-Do item deleted successfully');
+      await notifee.cancelTriggerNotification(id);
+      Alert.alert('Ολα καλα', 'Διεγραψες ενα αντικειμενο μαγκα μου');
     } catch (error) {
-      Alert.alert('Error', 'Failed to delete To-Do item');
+      Alert.alert('Προβλημα', 'Δεν διεγραψες τιποτα μαγκα μου');
     }
   };
 
-  startEditing = (item: ToDoItem) => {
-    this.setState({
-      editingItemId: item.id,
-      editingTitle: item.title,
-      editingDescription: item.description,
-    });
-  };
+  handleUpdateToDo = async () => {
+    const { toDoList, newTitle, newDescription, editingItemId } = this.state;
 
-  handleUpdate = async () => {
-    const { toDoList, editingItemId, editingTitle, editingDescription } = this.state;
-    const updatedToDoList = toDoList.map((item) =>
+    const updatedToDoList = toDoList.map(item =>
       item.id === editingItemId
-        ? { ...item, title: editingTitle, description: editingDescription }
+        ? { ...item, title: newTitle, description: newDescription }
         : item
     );
-    this.setState({
-      toDoList: updatedToDoList,
-      editingItemId: null,
-      editingTitle: '',
-      editingDescription: '',
-    });
-
+    this.setState({ toDoList: updatedToDoList, newTitle: '', newDescription: '', editingItemId: null });
     try {
       await DefaultPreference.set('toDoList', JSON.stringify(updatedToDoList));
-      Alert.alert('Success', 'To-Do item updated successfully');
+      Alert.alert('Τα καταφερατε', 'Προσθεσατε ενα  αντικειμενο στην λιστα');
     } catch (error) {
-      Alert.alert('Error', 'Failed to update To-Do item');
+      Alert.alert('Σφαλμα', 'Παρουσιαστικε σφακμα');
     }
+  };
+
+  handleToggleReminder = (id: string, reminderEnabled: boolean) => {
+    const { toDoList } = this.state;
+    const updatedToDoList = toDoList.map(item =>
+      item.id === id ? { ...item, reminderEnabled } : item
+    );
+    this.setState({ toDoList: updatedToDoList });
   };
 
   renderItem = ({ item }: { item: ToDoItem }) => (
     <View>
       <Text>{item.title}</Text>
       <Text>{item.description}</Text>
-      <Button title="Edit" onPress={() => this.startEditing(item)} />
+      <Button title="Edit" onPress={() => this.handleEdit(item.id)} />
       <Button title="Delete" onPress={() => this.handleDelete(item.id)} />
+      {this.state.editingItemId === item.id && (
+        <View>
+          <Text>Enable Reminder:</Text>
+          <Switch
+            value={item.reminderEnabled}
+            onValueChange={(value) => this.handleToggleReminder(item.id, value)}
+          />
+        </View>
+      )}
     </View>
   );
 
   render() {
-    const { editingItemId, editingTitle, editingDescription } = this.state;
+    const { newTitle, newDescription, editingItemId } = this.state;
     return (
       <View>
         <Text>To-Do List</Text>
-        {editingItemId ? (
-          <View>
+        <FlatList
+          data={this.state.toDoList}
+          renderItem={this.renderItem}
+          keyExtractor={(item) => item.id}
+        />
+        {editingItemId && (
+          <>
             <TextInput
-              placeholder="Title"
-              onChangeText={(text) => this.setState({ editingTitle: text })}
-              value={editingTitle}
+              value={newTitle}
+              onChangeText={(text) => this.setState({ newTitle: text })}
+              placeholder="Επεξεργασια τιτλου"
             />
             <TextInput
-              placeholder="Description"
-              onChangeText={(text) => this.setState({ editingDescription: text })}
-              value={editingDescription}
+              value={newDescription}
+              onChangeText={(text) => this.setState({ newDescription: text })}
+              placeholder="Επεξεργασια  περιγρασης"
             />
-            <Button title="Update To-Do" onPress={this.handleUpdate} />
-          </View>
-        ) : (
-          <FlatList
-            data={this.state.toDoList}
-            renderItem={this.renderItem}
-            keyExtractor={(item) => item.id}
-          />
+            <Button title="Επεξεργασια" onPress={this.handleUpdateToDo} />
+          </>
         )}
       </View>
     );
