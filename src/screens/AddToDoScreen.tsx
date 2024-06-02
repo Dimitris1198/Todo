@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { View, Text, TextInput, Button, Alert } from 'react-native';
+import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
 import uuid from 'react-native-uuid';
 import DefaultPreference from 'react-native-default-preference';
 import notifee, { TriggerType, TimestampTrigger } from '@notifee/react-native';
@@ -13,7 +13,6 @@ interface ToDoItem {
 interface AddToDoScreenState {
   title: string;
   description: string;
-  toDoList: ToDoItem[];
 }
 
 class AddToDoScreen extends Component<{}, AddToDoScreenState> {
@@ -22,7 +21,6 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
     this.state = {
       title: '',
       description: '',
-      toDoList: [],
     };
   }
 
@@ -35,22 +33,30 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
   };
 
   handleAddToDo = async () => {
-    const { title, description, toDoList } = this.state;
+    const { title, description } = this.state;
+    if (!title.trim() || !description.trim()) {
+      Alert.alert('Error', 'Please enter a title and description');
+      return;
+    }
+
     const newToDo: ToDoItem = {
       id: uuid.v4().toString(),
       title,
       description,
     };
 
-    const updatedToDoList = [...toDoList, newToDo];
-    this.setState({ toDoList: updatedToDoList, title: '', description: '' });
-
     try {
+      const storedToDoList = await DefaultPreference.get('toDoList');
+      const toDoList = storedToDoList ? JSON.parse(storedToDoList) : [];
+      const updatedToDoList = [...toDoList, newToDo];
+
       await DefaultPreference.set('toDoList', JSON.stringify(updatedToDoList));
       await this.scheduleReminder(newToDo);
-      Alert.alert('Ωραια', 'ΤΟ εφτιαξες μαγκα μου');
+      
+      this.setState({ title: '', description: '' });
+      Alert.alert('Success', 'To-Do item added successfully');
     } catch (error) {
-      Alert.alert('Οχι και τοσο ωραια', 'Κατι πηγε λαθος');
+      Alert.alert('Error', 'Something went wrong');
     }
   };
 
@@ -62,11 +68,10 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
 
     await notifee.createTriggerNotification(
       {
-        title: 'Υπενθημιση',
-        body: `Μην ξεχασεις το : ${toDo.title}`,
+        title: 'Reminder',
+        body: `Don't forget: ${toDo.title}`,
         android: {
           channelId: 'default',
-        //  smallIcon: 'name-of-a-small-icon',  an thelw allh eikona
         },
       },
       trigger
@@ -75,22 +80,45 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
 
   render() {
     return (
-      <View>
-        <Text>Προσθηκη νεο για να κανεις πραγμα</Text>
+      <View style={styles.container}>
+        <Text style={styles.title}>Add a New Task</Text>
         <TextInput
-          placeholder="Τιτλος"
+          style={styles.input}
+          placeholder="Title"
           onChangeText={this.handleTitleChange}
           value={this.state.title}
         />
         <TextInput
-          placeholder="Περιγραφη"
+          style={styles.input}
+          placeholder="Description"
           onChangeText={this.handleDescriptionChange}
           value={this.state.description}
+          multiline
         />
-        <Button title="Προσθηκη" onPress={this.handleAddToDo} />
+        <Button title="Add Task"  color="#841584" onPress={this.handleAddToDo} />
       </View>
     );
   }
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#7938b5',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  input: {
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#430e75',
+    borderRadius: 5,
+    padding: 10,
+  },
+});
 
 export default AddToDoScreen;

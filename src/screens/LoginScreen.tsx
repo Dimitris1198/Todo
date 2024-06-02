@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { View, Text, TextInput, Button, Alert } from 'react-native';
+import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
 
 interface LoginScreenState {
   username: string;
@@ -29,7 +29,7 @@ class LoginScreen extends Component<any, LoginScreenState> {
     try {
       const response = await fetch('https://api.npoint.io/f74e690311e2654a5f8f'); 
       const credentials = await response.json();
-        console.log(credentials['password'],"aaaaaaaaa");
+
       if (credentials['user_name'] === username && credentials['password'] === password) {
         this.props.navigation.navigate('MainTabs');
       } else {
@@ -42,23 +42,54 @@ class LoginScreen extends Component<any, LoginScreenState> {
 
   render() {
     return (
-      <View>
-        <Text>Login</Text>
+      <View style={styles.container}>
+        <Text style={styles.title}>Login</Text>
         <TextInput
+          style={styles.input}
           placeholder="Ονομα χρηστη"
           onChangeText={this.handleUsernameChange}
           value={this.state.username}
         />
         <TextInput
+          style={styles.input}
           placeholder="Κωδικουλης"
           secureTextEntry
           onChangeText={this.handlePasswordChange}
           value={this.state.password}
         />
-        <Button title="Login" onPress={this.handleLogin} />
+        <View  style={styles.button}>
+        <Button  color='#841584' title="Login"     onPress={this.handleLogin}  />
+        </View>
       </View>
     );
   }
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    backgroundColor: '#7938b5',
+  },
+  title: {
+    fontSize: 34,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  input: {
+    width: '100%',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#430e75',
+    borderRadius: 5,
+  },
+  button: {
+    width: '100%', // Set the button width to 100% of the container
+  },
+});
 
 export default LoginScreen;
