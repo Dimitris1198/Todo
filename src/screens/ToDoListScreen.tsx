@@ -2,9 +2,6 @@ import React, { Component } from 'react';
 import { View, Text, FlatList, Button, Alert, TextInput, Platform, Switch, StyleSheet } from 'react-native';
 import DefaultPreference from 'react-native-default-preference';
 import notifee, { EventType } from '@notifee/react-native';
-import { PERMISSIONS, check, request } from 'react-native-permissions';
-import uuid from 'react-native-uuid';
-import { red } from 'react-native-reanimated/lib/typescript/reanimated2/Colors';
 
 interface ToDoItem {
   id: string;
@@ -18,6 +15,7 @@ interface ToDoListScreenState {
   newTitle: string;
   newDescription: string;
   editingItemId: string | null;
+  isFirstLoad: boolean;
 }
 
 class ToDoListScreen extends Component<{}, ToDoListScreenState> {
@@ -28,17 +26,44 @@ class ToDoListScreen extends Component<{}, ToDoListScreenState> {
       newTitle: '',
       newDescription: '',
       editingItemId: null,
+      isFirstLoad: true,
     };
   }
 
   async componentDidMount() {
-    this.loadToDoList();
+    this.props.navigation.addListener('focus', this.handleFocus);
     this.setupNotificationChannel();
-    this.props.navigation.addListener('focus', this.loadToDoList);
   }
 
   componentWillUnmount() {
-    this.props.navigation.removeListener('focus', this.loadToDoList);
+    this.props.navigation.removeListener('focus', this.handleFocus);
+  }
+
+  handleFocus = async () => {
+    if (this.state.isFirstLoad) {
+      await this.fetchInitialToDoList();
+      this.setState({ isFirstLoad: false });
+    }
+    this.loadToDoList();
+  };
+
+  async fetchInitialToDoList() {
+    try {
+      const response = await fetch('https://api.npoint.io/3dbe9481cd6175f6ffd8');
+      const data = await response.json();
+
+      const initialToDoList: ToDoItem[] = data.map((item: any) => ({
+        id: item.task_id,
+        title: item.title,
+        description: '', // Assuming description is not provided by the endpoint
+        reminderEnabled: item.has_reminder,
+      }));
+
+      this.setState({ toDoList: initialToDoList });
+      await DefaultPreference.set('toDoList', JSON.stringify(initialToDoList));
+    } catch (error) {
+      Alert.alert('Error', 'Failed to fetch initial To-Do list');
+    }
   }
 
   async setupNotificationChannel() {
@@ -123,27 +148,29 @@ class ToDoListScreen extends Component<{}, ToDoListScreenState> {
     this.setState({ toDoList: updatedToDoList });
   };
 
-// Inside the renderItem method of ToDoListScreen component
-renderItem = ({ item }: { item: ToDoItem }) => (
+  renderItem = ({ item }: { item: ToDoItem }) => (
     <View style={styles.todoItemContainer}>
       <Text style={styles.todoItemTitle}>{item.title}</Text>
       <Text style={styles.todoItemDescription}>{item.description}</Text>
       <View style={styles.buttonContainer}>
-        <View style={[styles.buttonContainer, { flexDirection: 'row' }]}>
-         <Button title="Edit" onPress={() => this.handleEdit(item.id)} />
+        <View style={styles.button}>
+          <Button title="Edit" onPress={() => this.handleEdit(item.id)} />
+        </View>
+        <View style={styles.button}>
           <Button title="Delete" onPress={() => this.handleDelete(item.id)} color="#841584" />
         </View>
-        <View style={[styles.buttonContainer, { flexDirection: 'row' }]}>
+      </View>
+      {this.state.editingItemId === item.id && (
+        <View style={styles.toggleReminderContainer}>
           <Text>Enable Reminder:</Text>
           <Switch
             value={item.reminderEnabled}
             onValueChange={(value) => this.handleToggleReminder(item.id, value)}
           />
         </View>
-      </View>
+      )}
     </View>
   );
-  
 
   render() {
     const { newTitle, newDescription, editingItemId } = this.state;
@@ -188,13 +215,14 @@ const styles = StyleSheet.create({
     fontSize: 34,
     fontWeight: 'bold',
     marginBottom: 24,
-    textAlign:'center',
+    textAlign: 'center',
   },
-
   flatListContent: {
     flexGrow: 1,
   },
   todoItemContainer: {
+    display: "flex",
+    flexDirection: "column",
     marginBottom: 20,
     borderWidth: 1,
     borderColor: '#430e75',
@@ -204,24 +232,30 @@ const styles = StyleSheet.create({
   todoItemTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    textAlign:'center'
+    textAlign: 'center',
   },
   todoItemDescription: {
     fontSize: 20,
-    fontStyle: "italic",
+    fontStyle: 'italic',
   },
   buttonContainer: {
-    flexDirection: 'column',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 10,
-    marginHorizontal: 10,
+    marginHorizontal: 20,
+  },
+  button: {
+    width: "40%",
+    margin: 10,
   },
   toggleReminderContainer: {
-    flexDirection: "row",
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 10,
   },
   editContainer: {
-    marginTop: 20,
+    marginTop: 10,
   },
   input: {
     marginBottom: 10,

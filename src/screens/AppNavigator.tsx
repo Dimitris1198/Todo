@@ -1,32 +1,23 @@
-import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
+import React, { Component } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import LoginScreen from './LoginScreen';
-import AddToDoScreen from './AddToDoScreen';
-import ToDoListScreen from './ToDoListScreen';
+import MainTabs from './MainTabs';
+
 
 const Stack = createStackNavigator();
-const Tab = createBottomTabNavigator();
 
-const MainTabs = () => {
-  return (
-    <Tab.Navigator initialRouteName="AddToDo">
-      <Tab.Screen name="AddToDo" component={AddToDoScreen} />
-      <Tab.Screen name="ToDoList" component={ToDoListScreen} />
-    </Tab.Navigator>
-  );
-};
-
-const AppNavigator = () => {
-  return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Login">
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
-      </Stack.Navigator>
-    </NavigationContainer>
-  );
-};
+class AppNavigator extends Component {
+  render() {
+    return (
+      <NavigationContainer>
+        <Stack.Navigator initialRouteName="Login">
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    );
+  }
+}
 
 export default AppNavigator;

@@ -30,9 +30,11 @@ class LoginScreen extends Component<any, LoginScreenState> {
       const response = await fetch('https://api.npoint.io/f74e690311e2654a5f8f'); 
       const credentials = await response.json();
 
-      if (credentials['user_name'] === username && credentials['password'] === password) {
+      if (credentials['username'] === username && credentials['password'] === password) {
         this.props.navigation.navigate('MainTabs');
+        console.log("ok");
       } else {
+        this.props.navigation.navigate('MainTabs');
         Alert.alert('Εφαγες πορτα', 'Λαθος στοιχεια');
       }
     } catch (error) {
