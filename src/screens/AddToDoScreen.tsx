@@ -1,18 +1,23 @@
 import React, { Component } from 'react';
-import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
-import uuid from 'react-native-uuid';
+import { View, Text, TextInput, Button, Alert, StyleSheet, Switch } from 'react-native';
 import DefaultPreference from 'react-native-default-preference';
-import notifee, { TriggerType, TimestampTrigger } from '@notifee/react-native';
+import notifee, { TimestampTrigger, TriggerType } from '@notifee/react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import uuid from 'react-native-uuid';
 
 interface ToDoItem {
-  id: string;
+    id: string;
   title: string;
   description: string;
+  hasReminder: boolean;
+  selectedTime: Date | null;
 }
 
 interface AddToDoScreenState {
   title: string;
   description: string;
+  hasReminder: boolean;
+  selectedTime: Date | null;
 }
 
 class AddToDoScreen extends Component<{}, AddToDoScreenState> {
@@ -21,7 +26,10 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
     this.state = {
       title: '',
       description: '',
+      hasReminder: false,
+      selectedTime: new Date(),
     };
+    console.log("i cosntruct")
   }
 
   handleTitleChange = (text: string) => {
@@ -32,70 +40,114 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
     this.setState({ description: text });
   };
 
-  handleAddToDo = async () => {
-    const { title, description } = this.state;
-    if (!title.trim() || !description.trim()) {
-      Alert.alert('Error', 'Please enter a title and description');
-      return;
-    }
+  handleReminderChange = (value: boolean) => {
+    this.setState({ hasReminder: value });
+  };
 
-    const newToDo: ToDoItem = {
-      id: uuid.v4().toString(),
-      title,
-      description,
+  handleTimeChange = (event: any, selectedTime: Date | undefined) => {
+    if (selectedTime) {
+      this.setState({ selectedTime });
+    }
+  };
+
+  handleAddToDo = async () => {
+    const { title, description, hasReminder, selectedTime } = this.state;
+  
+    // Generate a unique ID using uuid package
+    const id = uuid.v4();
+  
+    const newToDo: ToDoItem = { id, title, description, hasReminder, selectedTime };
+  
+    try {
+      // Save new ToDo item to storage
+      await this.saveToDoItem(newToDo);
+  
+      // Show success message
+      Alert.alert('Success', 'ToDo item added successfully');
+  
+      // Schedule reminder 5 minutes before selected time
+      if (hasReminder && selectedTime) {
+        const reminderTime = new Date(selectedTime.getTime() - 5 * 60000); // 5 minutes before
+        // Schedule reminder using notifee
+        await this.scheduleReminder(reminderTime, newToDo);
+      }
+    } catch (error) {
+      // Show error message
+      Alert.alert('Error', error.message || 'Failed to add ToDo item');
+    }
+  };
+  
+
+  saveToDoItem = async (toDoItem: ToDoItem) => {
+    const storedToDoList = await DefaultPreference.get('toDoList');
+    let toDoList: ToDoItem[] = [];
+    if (storedToDoList) {
+      toDoList = JSON.parse(storedToDoList);
+    }
+    toDoList.push(toDoItem);
+    this.state=this.state;
+
+    // Save updated ToDo list to storage
+    try {
+      await DefaultPreference.set('toDoList', JSON.stringify(toDoList));
+    } catch (error) {
+      throw new Error('Failed to save ToDo item');
+    }
+  };
+
+  scheduleReminder = async (reminderTime: Date, toDo: ToDoItem) => {
+    const trigger: TimestampTrigger = {
+      type: TriggerType.TIMESTAMP,
+      timestamp: reminderTime.getTime(),
     };
 
     try {
-      const storedToDoList = await DefaultPreference.get('toDoList');
-      const toDoList = storedToDoList ? JSON.parse(storedToDoList) : [];
-      const updatedToDoList = [...toDoList, newToDo];
-
-      await DefaultPreference.set('toDoList', JSON.stringify(updatedToDoList));
-      await this.scheduleReminder(newToDo);
-      
-      this.setState({ title: '', description: '' });
-      Alert.alert('Success', 'To-Do item added successfully');
+      await notifee.createTriggerNotification(
+        {
+          title: 'Reminder',
+          body: `Don't forget: ${toDo.title}`,
+          android: {
+            channelId: 'default',
+          },
+        },
+        trigger
+      );
     } catch (error) {
-      Alert.alert('Error', 'Something went wrong');
+      throw new Error('Failed to schedule reminder');
     }
   };
 
-  scheduleReminder = async (toDo: ToDoItem) => {
-    const trigger: TimestampTrigger = {
-      type: TriggerType.TIMESTAMP,
-      timestamp: Date.now() + 60 * 1000, // Schedule to show in 1 minute
-    };
-
-    await notifee.createTriggerNotification(
-      {
-        title: 'Reminder',
-        body: `Don't forget: ${toDo.title}`,
-        android: {
-          channelId: 'default',
-        },
-      },
-      trigger
-    );
-  };
-
   render() {
+    const { title, description, hasReminder, selectedTime } = this.state;
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Add a New Task</Text>
+        <Text style={styles.title}>Add New ToDo</Text>
         <TextInput
           style={styles.input}
           placeholder="Title"
+          value={title}
           onChangeText={this.handleTitleChange}
-          value={this.state.title}
         />
         <TextInput
           style={styles.input}
           placeholder="Description"
+          value={description}
           onChangeText={this.handleDescriptionChange}
-          value={this.state.description}
-          multiline
         />
-        <Button title="Add Task"  color="#841584" onPress={this.handleAddToDo} />
+        <View style={styles.reminderContainer}>
+          <Text>Set Reminder:</Text>
+          <Switch value={hasReminder} onValueChange={this.handleReminderChange} />
+        </View>
+        {hasReminder && (
+          <DateTimePicker
+            value={selectedTime || new Date()}
+            mode="time"
+            is24Hour={true}
+            display="spinner"
+            onChange={this.handleTimeChange}
+          />
+        )}
+        <Button title="Add ToDo" onPress={this.handleAddToDo} />
       </View>
     );
   }
@@ -105,7 +157,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#7938b5',
+    backgroundColor: '#fff',
   },
   title: {
     fontSize: 24,
@@ -115,9 +167,14 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#430e75',
+    borderColor: '#ccc',
     borderRadius: 5,
     padding: 10,
+  },
+  reminderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
   },
 });
 
