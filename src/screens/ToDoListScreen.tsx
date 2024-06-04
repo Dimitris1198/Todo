@@ -15,7 +15,7 @@ interface ToDoItem {
   selectedTime: Date | null; // Add this line
 }
 
-  
+
 
 interface ToDoListScreenState {
   toDoList: ToDoItem[];
@@ -23,15 +23,15 @@ interface ToDoListScreenState {
   newDescription: string;
   editingItemId: string | null;
   hasReminder: boolean;
-  selectedTime:Date | null;
-  
+  selectedTime: Date | null;
+
 }
 
 class ToDoListScreen extends Component<{}, ToDoListScreenState> {
   isInitialLoad: boolean = true;
-    hasReminder: boolean | undefined;
-  
- 
+  hasReminder: boolean | undefined;
+
+
   constructor(props: {}) {
     super(props);
     this.state = {
@@ -105,8 +105,8 @@ class ToDoListScreen extends Component<{}, ToDoListScreenState> {
         title: item.title,
         description: '',
         selectedTime: item.date,
-        
-     hasReminder: item.has_reminder,
+
+        hasReminder: item.has_reminder,
       }));
 
       this.setState({ toDoList });
@@ -123,20 +123,20 @@ class ToDoListScreen extends Component<{}, ToDoListScreenState> {
   handleEdit = (id: string) => {
     const { toDoList } = this.state;
     const itemToEdit = toDoList.find(item => item.id === id);
-  console.log(itemToEdit)
+    console.log(itemToEdit)
     if (itemToEdit) {
       this.setState({
         newTitle: itemToEdit.title,
         newDescription: itemToEdit.description,
         editingItemId: id,
-         hasReminder: itemToEdit.hasReminder,
+        hasReminder: itemToEdit.hasReminder,
         selectedTime: itemToEdit.selectedTime,
       });
     }
   };
-  
 
-  
+
+
 
   handleTitleChange = (text: string) => {
     this.setState({ newTitle: text });
@@ -147,16 +147,17 @@ class ToDoListScreen extends Component<{}, ToDoListScreenState> {
   };
 
   handleReminderChange = (value: boolean) => {
+    console.log(value)
     this.setState({ hasReminder: value });
 
-    
+
   };
   handleTimeChange = (event: any, selectedTime: Date | undefined) => {
     if (selectedTime) {
       this.setState({ selectedTime });
     }
   };
-  
+
   handleUpdate = async () => {
     const { newTitle, newDescription, editingItemId, toDoList } = this.state;
     const updatedToDoList = toDoList.map(item => {
@@ -211,42 +212,43 @@ class ToDoListScreen extends Component<{}, ToDoListScreenState> {
     const { newTitle, newDescription, editingItemId } = this.state;
     return (
       <View style={styles.container}>
-        {editingItemId !== null&& (  <View style={styles.editForm}>
-        
-            <TextInput
-              style={styles.input}
-              placeholder="Title"
-              value={newTitle}
-              onChangeText={this.handleTitleChange}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Description"
-              value={newDescription}
-              onChangeText={this.handleDescriptionChange}
-            />
-            <View style={styles.reminderContainer}>
-   
-          <View style={styles.reminderContainer}>
-          <Text>Set Reminder:</Text>
-          <Switch value={this.hasReminder} onValueChange={this.handleReminderChange} />
-        </View>
-        {this.hasReminder && (
-          <DateTimePicker
-            value={this.selectedTime || new Date()}
-            mode="time"
-            is24Hour={true}
-            display="spinner"
-            onChange={this.handleTimeChange}
+        {editingItemId !== null && (
+        <View style={styles.editForm}>
+          <TextInput
+            style={styles.input}
+            placeholder="Title"
+            value={newTitle}
+            onChangeText={this.handleTitleChange}
           />
-        )}
-      
-      </View>
-            <View style={styles.buttonContainer}>
-              <Button title="Update" onPress={this.handleUpdate} />
-              <Button title="Cancel" onPress={this.handleCancel} />
+          <TextInput
+            style={styles.input}
+            placeholder="Description"
+            value={newDescription}
+            onChangeText={this.handleDescriptionChange}
+          />
+          <View style={styles.reminderContainer}>
+
+            <View style={styles.reminderContainer}>
+              <Text>Set Reminder:</Text>
+              <Switch value={this.state.hasReminder} onValueChange={this.handleReminderChange} />
             </View>
+            {this.hasReminder && (
+              <DateTimePicker
+
+                value={this.state.selectedTime || new Date()}
+                mode="time"
+                is24Hour={true}
+                display="spinner"
+                onChange={this.handleTimeChange}
+              />
+            )}
+
           </View>
+          <View style={styles.buttonContainer}>
+            <Button title="Update" onPress={this.handleUpdate} />
+            <Button title="Cancel" onPress={this.handleCancel} />
+          </View>
+        </View>
         )}
         <FlatList
           data={this.state.toDoList}

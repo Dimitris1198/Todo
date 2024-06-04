@@ -6,7 +6,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import uuid from 'react-native-uuid';
 
 interface ToDoItem {
-    id: string;
+  id: string;
   title: string;
   description: string;
   hasReminder: boolean;
@@ -54,7 +54,7 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
     const { title, description, hasReminder, selectedTime } = this.state;
   
     // Generate a unique ID using uuid package
-    const id = uuid.v4();
+    const id = uuid.v4().toString();
   
     const newToDo: ToDoItem = { id, title, description, hasReminder, selectedTime };
   
