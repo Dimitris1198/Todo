@@ -83,8 +83,10 @@ android {
         versionName "1.0"
         buildConfigField "String", "username" ,"\"serchat10\""
         buildConfigField "String", "password" ,"\"vrexeinero@\""
-        buildConfigField "String", "auth" ,"\"https://api.npoint.io/f74e690311e2654a5f8f\""
+      buildConfigField "String", "auth" ,"\"https://api.npoint.io/f74e690311e2654a5f8f\""
         buildConfigField "String", "todoes", "\"https://api.npoint.io/3dbe9481cd6175f6ffd8\""
+        
+
     }
     signingConfigs {
         debug {

@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
-
+import BuildConfig from 'react-native-build-config';
 interface LoginScreenState {
   username: string;
   password: string;
@@ -25,11 +25,15 @@ class LoginScreen extends Component<any, LoginScreenState> {
 
   handleLogin = async () => {
     const { username, password } = this.state;
-
+ 
+    console.log(BuildConfig.auth );
     try {
-      const response = await fetch('https://api.npoint.io/f74e690311e2654a5f8f'); 
+      const response = await fetch(BuildConfig.auth); 
       const credentials = await response.json();
-
+      console.log(credentials);
+      var first=(username===BuildConfig.username &&password===BuildConfig.password )
+      console.log(first)
+      console.log(BuildConfig.username)
       if (credentials['username'] === username && credentials['password'] === password) {
         this.props.navigation.navigate('MainTabs');
         console.log("ok");
