@@ -29,7 +29,6 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
       hasReminder: false,
       selectedTime: new Date(),
     };
-    console.log("i cosntruct")
   }
 
   handleTitleChange = (text: string) => {
@@ -85,7 +84,6 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
       toDoList = JSON.parse(storedToDoList);
     }
     toDoList.push(toDoItem);
-    this.state=this.state;
 
     // Save updated ToDo list to storage
     try {
@@ -104,6 +102,7 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
     try {
       await notifee.createTriggerNotification(
         {
+          id: toDo.id, // Use the toDo item's id for the notification id
           title: 'Reminder',
           body: `Don't forget: ${toDo.title}`,
           android: {
@@ -157,7 +156,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#123',
   },
   title: {
     fontSize: 24,

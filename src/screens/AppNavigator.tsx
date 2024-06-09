@@ -14,7 +14,7 @@ class AppNavigator extends Component {
         <Stack.Navigator initialRouteName="Login">
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
-          <Stack.Screen name="Edit" component={EditScreen} />
+          <Stack.Screen name="EditScreen" component={EditScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     );

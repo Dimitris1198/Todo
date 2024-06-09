@@ -4,6 +4,7 @@ import DefaultPreference from 'react-native-default-preference';
 import notifee, { EventType } from '@notifee/react-native';
 import uuid from 'react-native-uuid';
 import BuildConfig from 'react-native-build-config';
+import Todo from '../objects/Todo';
 
 // const BuildConfig = require('react-native-build-config')
 interface ToDoItem {
@@ -114,8 +115,9 @@ class ToDoListScreen extends Component<{ navigation: any }, ToDoListScreenState>
   };
 
   handleEditNavigation = (item: ToDoItem) => {
-    this.props.navigation.navigate('EditScreen', { item });
+    this.props.navigation.navigate('EditScreen', { id: item.id, item });
   };
+  
 
   renderItem = ({ item }: { item: ToDoItem }) => (
     <View style={styles.itemContainer}>
@@ -146,7 +148,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#123',
   },
   itemContainer: {
     padding: 15,
