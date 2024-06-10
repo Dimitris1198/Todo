@@ -104,7 +104,7 @@ class EditScreen extends Component<{ navigation: any, route: any }, EditScreenSt
 
           // Save the updated toDoList back to DefaultPreference
           await DefaultPreference.set('toDoList', JSON.stringify(toDoList));
-
+          this.updateNotification(updatedToDoItem)
           // Optionally, navigate back to previous screen after successful update
           this.props.navigation.goBack();
         } else {
@@ -122,7 +122,7 @@ class EditScreen extends Component<{ navigation: any, route: any }, EditScreenSt
   
     // Schedule the new reminder
     if (toDo.hasReminder && toDo.selectedTime) {
-      const reminderTime = new Date(toDo.selectedTime.getTime() - 5 * 60000); // 5 minutes before
+      const reminderTime = new Date(toDo.selectedTime.getTime() - 1 * 60000); // 5 minutes before
       await this.scheduleReminder(reminderTime, toDo);
     }
   };
@@ -132,7 +132,18 @@ class EditScreen extends Component<{ navigation: any, route: any }, EditScreenSt
       type: TriggerType.TIMESTAMP,
       timestamp: reminderTime.getTime(),
     };
+    await notifee.createTriggerNotification(
+      {
+        title: 'Reminder',
+        body: `Don't forget: ${toDo.title}`,
+        android: {
+          channelId: 'default',
+        },
+      },
+      trigger,
+    );
   }
+  
   
   render() {
     const { newTitle, newDescription, hasReminder, showDateTimePicker, todoItem } = this.state;

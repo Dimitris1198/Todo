@@ -29,8 +29,10 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
       hasReminder: false,
       selectedTime: new Date(),
     };
-  }
 
+ 
+  }
+  
   handleTitleChange = (text: string) => {
     this.setState({ title: text });
   };
@@ -51,7 +53,10 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
 
   handleAddToDo = async () => {
     const { title, description, hasReminder, selectedTime } = this.state;
-  
+    const channelId = await notifee.createChannel({
+      id: 'default',
+      name: 'Default Channel',
+    });
     // Generate a unique ID using uuid package
     const id = uuid.v4().toString();
   
@@ -66,12 +71,14 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
   
       // Schedule reminder 5 minutes before selected time
       if (hasReminder && selectedTime) {
-        const reminderTime = new Date(selectedTime.getTime() - 5 * 60000); // 5 minutes before
+        const reminderTime = new Date(selectedTime.getTime() + 1 * 60000); // 5 minutes before
         // Schedule reminder using notifee
         await this.scheduleReminder(reminderTime, newToDo);
       }
     } catch (error) {
       // Show error message
+      console.log("here")
+      console.log(error)
       Alert.alert('Error', error.message || 'Failed to add ToDo item');
     }
   };
@@ -94,11 +101,13 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
   };
 
   scheduleReminder = async (reminderTime: Date, toDo: ToDoItem) => {
+
+    await notifee.requestPermission()
     const trigger: TimestampTrigger = {
       type: TriggerType.TIMESTAMP,
       timestamp: reminderTime.getTime(),
     };
-
+console.log(toDo.id)
     try {
       await notifee.createTriggerNotification(
         {
@@ -112,6 +121,7 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
         trigger
       );
     } catch (error) {
+      console.log(error)
       throw new Error('Failed to schedule reminder');
     }
   };

@@ -27,23 +27,23 @@ class LoginScreen extends Component<any, LoginScreenState> {
     const { username, password } = this.state;
  
     console.log(BuildConfig.auth );
-    try {
-      const response = await fetch(BuildConfig.auth); 
-      const credentials = await response.json();
-      console.log(credentials);
-      var first=(username===BuildConfig.username &&password===BuildConfig.password )
-      console.log(first)
-      console.log(BuildConfig.username)
-      if (credentials['username'] === username && credentials['password'] === password) {
+   // try {
+    //  const response = await fetch(BuildConfig.auth); 
+    //  const credentials = await response.json();
+    //  console.log(credentials);
+    //  var first=(username===BuildConfig.username &&password===BuildConfig.password )
+     // console.log(first)
+    //  console.log(BuildConfig.username)
+     // if (credentials['username'] === username && credentials['password'] === password) {
         this.props.navigation.navigate('MainTabs');
         console.log("ok");
-      } else {
+    //  } else {
         this.props.navigation.navigate('MainTabs');
         Alert.alert('Εφαγες πορτα', 'Λαθος στοιχεια');
-      }
-    } catch (error) {
-      Alert.alert('Login Failed', 'An error occurred. Please try again.');
-    }
+   //   }
+  //  } catch (error) {
+ //     Alert.alert('Login Failed', 'An error occurred. Please try again.');
+  //  }
   };
 
   render() {
