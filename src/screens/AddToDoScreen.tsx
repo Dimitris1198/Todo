@@ -3,12 +3,14 @@ import { View, Text, TextInput, Button, Alert, StyleSheet, Switch } from 'react-
 import DefaultPreference from 'react-native-default-preference';
 import notifee, { TimestampTrigger, TriggerType } from '@notifee/react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import moment from 'moment';
 import uuid from 'react-native-uuid';
 
 interface ToDoItem {
   id: string;
   title: string;
   description: string;
+  date: string;
   hasReminder: boolean;
   selectedTime: Date | null;
 }
@@ -16,8 +18,11 @@ interface ToDoItem {
 interface AddToDoScreenState {
   title: string;
   description: string;
+  date: Date;
   hasReminder: boolean;
   selectedTime: Date | null;
+  showDatePicker: boolean;
+  showTimePicker: boolean;
 }
 
 class AddToDoScreen extends Component<{}, AddToDoScreenState> {
@@ -26,13 +31,14 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
     this.state = {
       title: '',
       description: '',
+      date: new Date(),
       hasReminder: false,
       selectedTime: new Date(),
+      showDatePicker: false,
+      showTimePicker: false,
     };
-
- 
   }
-  
+
   handleTitleChange = (text: string) => {
     this.setState({ title: text });
   };
@@ -41,48 +47,46 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
     this.setState({ description: text });
   };
 
-  handleReminderChange = (value: boolean) => {
-    this.setState({ hasReminder: value });
+  handleDateChange = (event: any, selectedDate: Date | undefined) => {
+    if (selectedDate) {
+      this.setState({ date: selectedDate, showDatePicker: false });
+    }
   };
 
   handleTimeChange = (event: any, selectedTime: Date | undefined) => {
     if (selectedTime) {
-      this.setState({ selectedTime });
+      this.setState({ selectedTime, showTimePicker: false });
     }
   };
 
+  handleReminderChange = (value: boolean) => {
+    this.setState({ hasReminder: value });
+  };
+
   handleAddToDo = async () => {
-    const { title, description, hasReminder, selectedTime } = this.state;
+    const { title, description, date, hasReminder, selectedTime } = this.state;
     const channelId = await notifee.createChannel({
       id: 'default',
       name: 'Default Channel',
     });
-    // Generate a unique ID using uuid package
+
     const id = uuid.v4().toString();
-  
-    const newToDo: ToDoItem = { id, title, description, hasReminder, selectedTime };
-  
+    const formattedDate = moment(date).format('YYYY-MM-DD');
+    const newToDo: ToDoItem = { id, title, description, date: formattedDate, hasReminder, selectedTime };
+
     try {
-      // Save new ToDo item to storage
       await this.saveToDoItem(newToDo);
-  
-      // Show success message
       Alert.alert('Success', 'ToDo item added successfully');
-  
-      // Schedule reminder 5 minutes before selected time
+
       if (hasReminder && selectedTime) {
-        const reminderTime = new Date(selectedTime.getTime() + 1 * 60000); // 5 minutes before
-        // Schedule reminder using notifee
+        const reminderTime = moment(selectedTime).toDate();
         await this.scheduleReminder(reminderTime, newToDo);
       }
     } catch (error) {
-      // Show error message
-      console.log("here")
-      console.log(error)
       Alert.alert('Error', error.message || 'Failed to add ToDo item');
+      console.log(error)
     }
   };
-  
 
   saveToDoItem = async (toDoItem: ToDoItem) => {
     const storedToDoList = await DefaultPreference.get('toDoList');
@@ -92,7 +96,6 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
     }
     toDoList.push(toDoItem);
 
-    // Save updated ToDo list to storage
     try {
       await DefaultPreference.set('toDoList', JSON.stringify(toDoList));
     } catch (error) {
@@ -101,17 +104,16 @@ class AddToDoScreen extends Component<{}, AddToDoScreenState> {
   };
 
   scheduleReminder = async (reminderTime: Date, toDo: ToDoItem) => {
-
-    await notifee.requestPermission()
+    await notifee.requestPermission();
     const trigger: TimestampTrigger = {
       type: TriggerType.TIMESTAMP,
       timestamp: reminderTime.getTime(),
     };
-console.log(toDo.id)
+
     try {
       await notifee.createTriggerNotification(
         {
-          id: toDo.id, // Use the toDo item's id for the notification id
+          id: toDo.id,
           title: 'Reminder',
           body: `Don't forget: ${toDo.title}`,
           android: {
@@ -121,13 +123,12 @@ console.log(toDo.id)
         trigger
       );
     } catch (error) {
-      console.log(error)
       throw new Error('Failed to schedule reminder');
     }
   };
 
   render() {
-    const { title, description, hasReminder, selectedTime } = this.state;
+    const { title, description, date, hasReminder, selectedTime, showDatePicker, showTimePicker } = this.state;
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Add New ToDo</Text>
@@ -143,19 +144,35 @@ console.log(toDo.id)
           value={description}
           onChangeText={this.handleDescriptionChange}
         />
+        <View style={styles.dateTimeContainer}>
+          <Text style={styles.label}>Select Date:</Text>
+          <Button title="Pick Date" onPress={() => this.setState({ showDatePicker: true })} />
+          {showDatePicker && (
+            <DateTimePicker
+              value={date}
+              mode="date"
+              display="spinner"
+              onChange={this.handleDateChange}
+            />
+          )}
+        </View>
+        <View style={styles.dateTimeContainer}>
+          <Text style={styles.label}>Select Time:</Text>
+          <Button title="Pick Time" onPress={() => this.setState({ showTimePicker: true })} />
+          {showTimePicker && (
+            <DateTimePicker
+              value={selectedTime || new Date()}
+              mode="time"
+              is24Hour={true}
+              display="spinner"
+              onChange={this.handleTimeChange}
+            />
+          )}
+        </View>
         <View style={styles.reminderContainer}>
           <Text>Set Reminder:</Text>
           <Switch value={hasReminder} onValueChange={this.handleReminderChange} />
         </View>
-        {hasReminder && (
-          <DateTimePicker
-            value={selectedTime || new Date()}
-            mode="time"
-            is24Hour={true}
-            display="spinner"
-            onChange={this.handleTimeChange}
-          />
-        )}
         <Button title="Add ToDo" onPress={this.handleAddToDo} />
       </View>
     );
@@ -179,6 +196,14 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 5,
     padding: 10,
+  },
+  label: {
+    marginBottom: 10,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  dateTimeContainer: {
+    marginBottom: 20,
   },
   reminderContainer: {
     flexDirection: 'row',

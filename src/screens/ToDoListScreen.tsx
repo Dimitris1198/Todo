@@ -2,11 +2,8 @@ import React, { Component } from 'react';
 import { View, Text, FlatList, Button, Alert, StyleSheet } from 'react-native';
 import DefaultPreference from 'react-native-default-preference';
 import notifee, { EventType } from '@notifee/react-native';
-import uuid from 'react-native-uuid';
 import BuildConfig from 'react-native-build-config';
-import Todo from '../objects/Todo';
 
-// const BuildConfig = require('react-native-build-config')
 interface ToDoItem {
   id: string;
   title: string;
@@ -42,7 +39,6 @@ class ToDoListScreen extends Component<{ navigation: any }, ToDoListScreenState>
 
   handleFocus = async () => {
     if (this.isInitialLoad) {
-      await this.fetchInitialToDoItems();
       this.isInitialLoad = false;
     } else {
       this.loadToDoList();
@@ -78,28 +74,6 @@ class ToDoListScreen extends Component<{ navigation: any }, ToDoListScreenState>
     }
   };
 
-  fetchInitialToDoItems = async () => {
-    try {
-      const response = await fetch(BuildConfig.todoes);
-      const initialToDoItems = await response.json();
-      console.log(BuildConfig.todoes)
-      console.log(response)
-      const toDoList = initialToDoItems.map((item: any) => ({
-        id: item.task_id,
-        title: item.title,
-        description: '',
-        date: item.date,
-        hasReminder: item.has_reminder,
-        selectedTime: null,
-      }));
-
-      this.setState({ toDoList });
-      await DefaultPreference.set('toDoList', JSON.stringify(toDoList));
-    } catch (error) {
-      Alert.alert('Error', 'Failed to fetch initial To-Do items');
-    }
-  };
-
   handleDelete = async (id: string) => {
     const { toDoList } = this.state;
     const updatedToDoList = toDoList.filter(item => item.id !== id);
@@ -117,7 +91,6 @@ class ToDoListScreen extends Component<{ navigation: any }, ToDoListScreenState>
   handleEditNavigation = (item: ToDoItem) => {
     this.props.navigation.navigate('EditScreen', { id: item.id, item });
   };
-  
 
   renderItem = ({ item }: { item: ToDoItem }) => (
     <View style={styles.itemContainer}>

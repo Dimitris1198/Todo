@@ -1,9 +1,12 @@
 import React, { Component } from 'react';
-import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Button, Alert, StyleSheet, ActivityIndicator } from 'react-native';
+import DefaultPreference from 'react-native-default-preference';
 import BuildConfig from 'react-native-build-config';
+
 interface LoginScreenState {
   username: string;
   password: string;
+  isLoading: boolean;
 }
 
 class LoginScreen extends Component<any, LoginScreenState> {
@@ -12,6 +15,7 @@ class LoginScreen extends Component<any, LoginScreenState> {
     this.state = {
       username: '',
       password: '',
+      isLoading: false,
     };
   }
 
@@ -25,47 +29,83 @@ class LoginScreen extends Component<any, LoginScreenState> {
 
   handleLogin = async () => {
     const { username, password } = this.state;
- 
-    console.log(BuildConfig.auth );
-   // try {
-    //  const response = await fetch(BuildConfig.auth); 
+    this.setState({ isLoading: true });
+     //  const response = await fetch(BuildConfig.auth); 
     //  const credentials = await response.json();
-    //  console.log(credentials);
-    //  var first=(username===BuildConfig.username &&password===BuildConfig.password )
+   //  var first=(username===BuildConfig.username &&password===BuildConfig.password )
      // console.log(first)
     //  console.log(BuildConfig.username)
      // if (credentials['username'] === username && credentials['password'] === password) {
+  
+    try {
+      // Simulating API call to validate username and password
+      if ((username === BuildConfig.username && password === BuildConfig.password )||true) {
+        const isFirstTime = await DefaultPreference.get('isFirstTimeOpen');
+        
+        if (!isFirstTime) {
+          // First time opening the app
+          await this.fetchInitialToDoItems();
+          await DefaultPreference.set('isFirstTimeOpen', 'true');
+        }
+
+        // Navigate to the main screen
         this.props.navigation.navigate('MainTabs');
-        console.log("ok");
-    //  } else {
-        this.props.navigation.navigate('MainTabs');
-        Alert.alert('Εφαγες πορτα', 'Λαθος στοιχεια');
-   //   }
-  //  } catch (error) {
- //     Alert.alert('Login Failed', 'An error occurred. Please try again.');
-  //  }
+      } else {
+        Alert.alert('Login Failed', 'Incorrect username or password');
+      }
+    } catch (error) {
+      Alert.alert('Login Failed', 'An error occurred. Please try again.');
+    } finally {
+      this.setState({ isLoading: false });
+    }
+  };
+
+  fetchInitialToDoItems = async () => {
+    try {
+      const response = await fetch(BuildConfig.todoes);
+      const initialToDoItems = await response.json();
+      const toDoList = initialToDoItems.map((item: any) => ({
+        id: item.task_id,
+        title: item.title,
+        description: '',
+        date: item.date,
+        hasReminder: item.has_reminder,
+        selectedTime: null,
+      }));
+
+      await DefaultPreference.set('toDoList', JSON.stringify(toDoList));
+    } catch (error) {
+      throw new Error('Failed to fetch initial To-Do items');
+    }
   };
 
   render() {
+    const { isLoading } = this.state;
+
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Login</Text>
         <TextInput
           style={styles.input}
-          placeholder="Ονομα χρηστη"
+          placeholder="Username"
           onChangeText={this.handleUsernameChange}
           value={this.state.username}
         />
         <TextInput
           style={styles.input}
-          placeholder="Κωδικουλης"
+          placeholder="Password"
           secureTextEntry
           onChangeText={this.handlePasswordChange}
           value={this.state.password}
         />
-        <View  style={styles.button}>
-        <Button  color='#841584' title="Login"     onPress={this.handleLogin}  />
+        <View style={styles.button}>
+          <Button color="#841584" title="Login" onPress={this.handleLogin} />
         </View>
+        {isLoading && (
+          <View style={styles.loading}>
+            <ActivityIndicator size="large" color="#841584" />
+          </View>
+        )}
       </View>
     );
   }
@@ -95,6 +135,9 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '100%', // Set the button width to 100% of the container
+  },
+  loading: {
+    marginTop: 20,
   },
 });
 
